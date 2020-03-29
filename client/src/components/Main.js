@@ -4,7 +4,7 @@ import Navbar from "./NavBar";
 import VastTable from "./VastTable";
 import VastForm from "./VastForm";
 
-const Main = (props) => {
+const Main = () => {
 
   return (
     <>

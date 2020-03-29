@@ -1,24 +1,6 @@
 import axios from "axios";
 import { SET_EDIT, SET_CREATE, SET_VAST, SET_MESSAGE, SET_XML, ERROR, SET_LIST } from "./types";
 
-export const fetchList = () => async dispatch => {
-    try {
-        const res = await axios.get(
-            "/api/vasts/fetch_vasts"
-        );
-        dispatch({
-            type: SET_LIST,
-            payload: res.data.list
-        });
-    }
-    catch (err) {
-        dispatch({
-            type: ERROR,
-            payload: err
-        });
-    }
-};
-
 export const setEdit = (bool, vast) => dispatch => {
     dispatch({
         type: SET_EDIT,

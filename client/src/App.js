@@ -7,19 +7,11 @@ import { ERROR, SET_LIST } from "./store/types";
 
 async function fetchList() {
   try {
-    const res = await axios.get(
-      "/api/vasts/fetch_vasts"
-    );
-    store.dispatch({
-      type: SET_LIST,
-      payload: res.data.list
-    });
+    const res = await axios.get("/api/vasts/fetch_vasts");
+    store.dispatch({ type: SET_LIST, payload: res.data.list });
   }
   catch (err) {
-    store.dispatch({
-      type: ERROR,
-      payload: err
-    });
+    store.dispatch({ type: ERROR, payload: err });
   }
 };
 

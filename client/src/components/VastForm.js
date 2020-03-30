@@ -41,7 +41,7 @@ class VastForm extends Component {
         const vast = { vast_url, position, width, height }
         if (this.isValidUrl(vast_url)) {
             if (this.props.create) {
-                if (!vast_url || errorInput) this.setState({ errorCreate: true })
+                if (errorInput) this.setState({ errorCreate: true })
                 else {
                     this.props.createVast(vast);
                     setTimeout(() => { this.setState(initialState) }, 500);

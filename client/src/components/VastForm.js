@@ -1,15 +1,10 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
+import Form from "./Form"
 import { createVast, editVast, setEdit, setCreate } from "../store/actions";
-import { ButtonStyle, Head, Label, LabelReq, Message } from "../styles/utils"
+import { ButtonStyle, Head, Message } from "../styles/utils"
 import { Container, ContainerForm } from "../styles/ContainerStyle";
-import Dropdown from 'react-dropdown';
 var _ = require('lodash');
-
-const options = [
-    'top_left', 'top_middle', 'top_right', 'middle_left',
-    'middle_right', 'bottom_left', 'bottom_middle', 'bottom_right'
-];
 
 const initialState = {
     vast_url: '',
@@ -18,8 +13,11 @@ const initialState = {
     height: 100,
     errorInput: false,
     errorCreate: false,
-    errorEdit: false
+    errorEdit: false,
+    errorUrl: false,
 };
+//eslint-disable-next-line
+const regex = new RegExp(/(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]+\.[^\s]{2,}|www\.[a-zA-Z0-9]+\.[^\s]{2,})/gi);
 
 class VastForm extends Component {
     constructor(props) {
@@ -41,93 +39,67 @@ class VastForm extends Component {
     done = () => {
         const { vast_url, position, width, height, errorInput } = this.state
         const vast = { vast_url, position, width, height }
-        if (this.props.create) {
-            if (!vast_url || errorInput) this.setState({ errorCreate: true })
-            else {
-                this.props.createVast(vast);
-                setTimeout(() => { this.setState(initialState) }, 500);
+        if (this.isValidUrl(vast_url)) {
+            if (this.props.create) {
+                if (!vast_url || errorInput) this.setState({ errorCreate: true })
+                else {
+                    this.props.createVast(vast);
+                    setTimeout(() => { this.setState(initialState) }, 500);
+                }
             }
+            else
+                this.checkEditConditions() && !errorInput ? this.props.editVast({ id: this.props.vast.id, ...vast })
+                    : this.setState({ errorEdit: true });
         }
-        else
-            this.checkEditConditions() && !errorInput ? this.props.editVast({ id: this.props.vast.id, ...vast })
-                : this.setState({ errorEdit: true });
+        else this.setState({ errorUrl: true })
     }
+
+    isValidUrl = value => value.match(regex)
 
     checkEditConditions = () => {
         const { vast } = this.props
         const { vast_url, position, width, height } = this.state
-        return (vast_url !== '' &&
-            vast_url !== vast.vast_url
+        return (vast_url !== vast.vast_url
             && ((position !== vast.position) || (Number(width) !== vast.width) || (Number(height) !== vast.height)))
     }
 
     updateValue = (key, e) => {
-        const { value } = e.target
+        const { value } = key === 'position' ? e : e.target
         this.setState({ [key]: value, errorEdit: false })
         this.checkValidation(key, value)
     }
 
     checkValidation = (key, value) => {
-        const { width, height, errorCreate, errorEdit } = this.state
-        if (key === 'width')
-            this.checkValues(value, height) ? this.setState({ errorInput: true })
-                : this.setState({ errorInput: false, errorCreate: false })
-        if (key === 'height')
-            if (this.checkValues(value, width))
-                this.setState({ errorInput: true })
-            else this.setState({ errorInput: false, errorCreate: false })
-        if (key === 'vast_url' && (errorCreate || errorEdit) && value)
-            this.setState({ errorCreate: false, errorEdit: false })
+        const { width, height, errorCreate, errorEdit, errorUrl } = this.state
+        if (key === 'width' || key === 'height')
+            key === 'width' ? this.checkIntInputs(value, height) : this.checkIntInputs(value, width)
+        if (key === 'vast_url' && (errorCreate || errorEdit || errorUrl))
+            this.setState({ errorCreate: false, errorEdit: false, errorUrl: false })
+    }
+
+    checkIntInputs = (width, height) => {
+        this.checkValues(width, height) ? this.setState({ errorInput: true })
+            : this.setState({ errorInput: false, errorCreate: false })
     }
 
     checkValues = (width, height) => ((width < 100 || width > 1000) || (height < 100 || height > 1000))
 
     showForm = () => {
         const { create, vast } = this.props
-        const { vast_url, position, width, height, errorInput, errorCreate, errorEdit } = this.state
+        const { vast_url, position, width, height, errorInput, errorCreate, errorEdit, errorUrl } = this.state
+        const values = { vast_url, position, width, height }
         return (
             <ContainerForm>
                 <Head>
                     {create ? 'Create new Vast' : `Edit vast ${vast.id}`}
                 </Head>
-                <Container>
-                    <LabelReq> vast url:</LabelReq>
-                    <input value={vast_url}
-                        onChange={e => this.updateValue("vast_url", e)}
-                    ></input>
-                </Container>
-                <Container>
-                    <Label> position:</Label>
-                    <Dropdown options={options} onChange={(e) => this.setState({ position: e.value })} value={position} />
-                </Container>
-                <Container>
-                    <Label> width:</Label>
-                    <input type='number' value={width}
-                        onChange={e => this.updateValue("width", e)}
-                    ></input>
-                </Container>
-                <Container>
-                    <Label> height:</Label>
-                    <input type='number' value={height}
-                        onChange={e => this.updateValue("height", e)}
-                    ></input>
-                </Container>
-                <Container>
-                    {errorInput &&
-                        <Message>
-                            Values of width and height can be between 100 to 1000.
-                    </Message>}
-                    {errorCreate &&
-                        <Message>
-                            Please check all inputs!
-                    </Message>}
-                    {errorEdit &&
-                        <Message>
-                            When edit you must change vast url and one more detail!
-                    </Message>}
-                </Container>
+                <Form onChange={this.updateValue} values={values} />
                 <Container>
                     <ButtonStyle onClick={() => this.done()}> done </ButtonStyle>
+                    {errorInput && <Message> Values of width and height can be between 100 to 1000 </Message>}
+                    {errorCreate && <Message> Please check all inputs </Message>}
+                    {errorEdit && <Message> When edit you must change vast url and one more detail </Message>}
+                    {errorUrl && <Message> insert a valid url </Message>}
                 </Container>
             </ContainerForm>
         )
@@ -138,10 +110,7 @@ class VastForm extends Component {
         return (
             <Container>
                 <ButtonStyle onClick={() => setCreate(!create)}> create vast </ButtonStyle>
-                {message &&
-                    <Message>
-                        {message}
-                    </Message>}
+                {message && <Message> {message} </Message>}
                 {(create || edit) && this.showForm()}
             </Container>
         );

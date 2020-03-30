@@ -54,6 +54,6 @@ export const LabelReq = styled(Label)`
 export const Message = styled.div`
   color: red;
   margin: 10px;
-  font-size: 20px;
+  font-size: 15px;
   }
 `;
